@@ -15,7 +15,7 @@ library(ggplot2)
 library(data.table)
 
 
-wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/FrameRateAnalysis_LimeLight/"
+wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/FrameRateAnalysis_LimeLight/LimeLightFrameRate"
 output <- "perFrameOut"
 
 #create the output folder if it does not exist
