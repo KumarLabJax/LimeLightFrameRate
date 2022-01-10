@@ -55,7 +55,7 @@ lenTable <- nrow(d2)
 # new column calculated
 d2[, perFrameRate := Time - shift(Time)]
 
-setwd(file.path(wd,output))
+setwd(file.path(wd,output)) # gives a warning
 
 #save the file with frame rate in output folder
 write.csv(d2, file = paste0(workingFile,"_fixed.csv"))
