@@ -1,4 +1,4 @@
-# LimeLightFrameRate2
+# LimeLightFrameRate
 Compare LimeLight Frame Rates
 
 Two Samples files are provided in the top level - both are .csv file
