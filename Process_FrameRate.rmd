@@ -1,0 +1,152 @@
+# ---
+# title: "Process_FrameRate"
+# author: "Vivek Kumar"
+# date: "12/23/2021"
+# output: html_document
+# ---
+# Export Path Data
+# For each LL file, export the path data.
+# the First column of has the time stamps 
+
+############# RUN THIS      ############# ############# 
+############# ############# ############# ############# 
+
+library(ggplot2)
+library(data.table)
+
+
+wd <- "/Users/vkumar/Box Sync/LAB/PSY todo/FrameRateAnalysis_LimeLight/"
+output <- "perFrameOut"
+
+#create the output folder if it does not exist
+dir.create(file.path(wd, output), showWarnings = FALSE)
+setwd(wd)
+
+pathFilesList <- list.files(path = wd, pattern = "Path.csv")
+
+for(workingFile in pathFilesList) {
+  
+# print the name of the current file
+print(paste("Working on file: ", workingFile))
+
+# set the path to working directory
+setwd(wd)
+
+# base R is slower 
+# d2 <- read.csv(workingFile, header = T, skip = 1)
+
+# use fread from data.table package
+# loads as class data.table
+d2 <- fread(workingFile, skip = 1, sep = ',', check.names = TRUE)
+
+# get table length
+lenTable <- nrow(d2)
+
+# this calculates the perFrameRate
+# THIS IS SLOW ... VERY VERY SLOW
+# d2$perFrameRate[1] <- NA
+# 
+# for ( i in 2:lenTable) {
+#  d2$perFrameRate[[i]] = as.numeric(d2$Time[i] - d2$Time[i-1])
+# 
+# }
+### data.table function is much faster ###
+# new column calculated
+d2[, perFrameRate := Time - shift(Time)]
+
+setwd(file.path(wd,output))
+
+#save the file with frame rate in output folder
+write.csv(d2, file = paste0(workingFile,"_fixed.csv"))
+
+# Plots
+p1 <- ggplot(d2, aes(x=Time, y=perFrameRate)) + geom_point(aes(size = perFrameRate), shape = 1) + geom_hline(yintercept = 1/30, color = "red") + geom_hline(yintercept = 2/30, color = "red") + geom_hline(yintercept = 3/30, color = "red") + geom_hline(yintercept = 10/30, color = "red")+ geom_hline(yintercept = 15/30, color = "red") + xlab("Time(Seconds)") + ylab("Frame Rate (Seconds)") + ggtitle(workingFile)
+
+p2 <- ggplot(d2, aes(x=Time, y=perFrameRate)) + geom_point(aes(size = perFrameRate), shape = 1) + geom_hline(yintercept = 1/30, color = "red") + geom_hline(yintercept = 2/30, color = "red") + geom_hline(yintercept = 3/30, color = "red") + geom_hline(yintercept = 10/30, color = "red")+ geom_hline(yintercept = 15/30, color = "red") + xlab("Time(Seconds)") + ylab("Frame Rate (Seconds)") + ggtitle(paste(workingFile,"- LOG")) +   scale_y_log10()
+
+pdf(paste0(workingFile,"_scatter.pdf"),10, 5)
+  print(p1)
+  print(p2)
+dev.off()
+
+png(paste0(workingFile,"_scatter.png"), width = 600, height = 400, units = "px", pointsize = 24)
+  print(p1)
+dev.off
+
+png(paste0(workingFile,"_scatter_LOG.png"), width = 600, height = 400, units = "px", pointsize = 24)
+  print(p2)
+dev.off()
+
+
+# histograms
+hist.data = hist(d2$perFrameRate, breaks = 30, plot=F) 
+hist.data$counts <- hist.data$counts +1 # because we are doing log transfrom, I'm adding 1 frame to each bin to avoid errors
+hist.data$counts = log10(hist.data$counts)
+
+pdf(paste0(workingFile,"_hist.pdf"),4, 4)
+  # hist1  
+  hist(d2$perFrameRate, breaks = 30)
+  abline(v=c(1/30, 2/30, 3.30,10/30,15/30),col="red",lwd=2)
+  
+  #hist2 log scale
+  plot(hist.data, ylab='log10(Frequency + 1)')
+  abline(v=c(1/30, 2/30, 3.30,10/30,15/30),col="red",lwd=2)
+dev.off()
+
+png(paste0(workingFile,"_hist1.png"), width = 600, height = 600, units = "px", pointsize = 12)
+  # hist1  
+  hist(d2$perFrameRate, breaks = 30)
+  abline(v=c(1/30, 2/30, 3.30,10/30,15/30),col="red",lwd=2)
+dev.off()
+
+png(paste0(workingFile,"_hist_LOG.png"), width = 600, height = 600, units = "px", pointsize = 12)
+  #hist2 log scale
+  plot(hist.data, ylab='log10(Frequency + 1)')
+  abline(v=c(1/30, 2/30, 3.30,10/30,15/30),col="red",lwd=2)
+dev.off()
+
+}
+
+############# ############# ############# ############# 
+############# ############# ############# ############# 
+
+
+
+############# DONT RUN THIS I used it for speed checking
+############# ############# ############# ############# 
+Can we speed things up
+
+Benchmarking 2 more methods of calculating lag time from 
+
+https://stackoverflow.com/questions/14689424/use-a-value-from-the-previous-row-in-an-r-data-table-calculation
+
+The data.table function is faster than dplyr. 0.1 vs 0.5sec
+the dlpyr is much much faster than the loop I used. 
+
+
+library(rbenchmark)
+
+d2 <- read.csv(workingFile, header = T, skip = 1)
+d2<- as.data.table(d2)
+
+benchmark(
+loop = {
+for ( i in 3:nrow(d2)) {
+ d2$perFrameRate[[i]] = as.numeric(d2$Time[i] - d2$Time[i-1])
+ }
+
+},
+
+shift = {
+d2[, perFrameRate := Time - shift(Time)]
+},
+
+player = {
+d2<- mutate(d2, perFrameRate = Time - lag(Time))
+})
+
+############# ############# ############# ############# 
+############# ############# ############# ############# 
+
+
+
