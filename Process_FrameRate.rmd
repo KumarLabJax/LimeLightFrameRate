@@ -41,8 +41,8 @@ setwd(wd)
 # loads as class data.table
 d2 <- fread(workingFile, skip = 1, sep = ',', check.names = TRUE)
 
-# remove the first 1 rows because LL makes errors 
-d2 <- d2[-c(1), ] 
+# remove all rows with 0 in time stamp 
+d2 <- d2[!(d2$Time <= 0), ] 
 
 # get table length
 lenTable <- nrow(d2)
