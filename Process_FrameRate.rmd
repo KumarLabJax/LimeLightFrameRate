@@ -41,7 +41,7 @@ setwd(wd)
 # loads as class data.table
 d2 <- fread(workingFile, skip = 1, sep = ',', check.names = TRUE)
 
-# remove the first 2 rows because LL makes errors 
+# remove the first 1 rows because LL makes errors 
 d2 <- d2[-c(1), ] 
 
 # get table length
